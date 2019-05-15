@@ -19,6 +19,11 @@ public:
 	void I2C_Init()
 	{
 		Wire.begin();												// Initialize the I2C bus		
+    #ifdef STM32
+    Wire.setSDA(PB_9);
+    Wire.setSCL(PB_8);  
+    Wire.setClock(100000);
+    #endif
 	}
 	//------------------------------------
 	// The I2C_Check uses the return value of
@@ -67,4 +72,3 @@ public:
 };	//class
 //======================================
 #endif	/* I2Ccommon_cpp */
-

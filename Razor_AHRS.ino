@@ -170,6 +170,10 @@
 #else
   #error YOU MUST TO SELECT THE SensorVariant FROM 1 TO 10! See "SENSOR SELECTOR" at top of "MENU.h" !
 #endif
+//#ifdef STM32
+//#define Serial Serial2
+//HardwareSerial Serial2(USART2);
+//#endif
 
 // OUTPUT OPTIONS
 /*****************************************************************/
@@ -188,14 +192,15 @@
 #define OUTPUT__MODE_SENSORS_CALIB 			2	// Outputs calibrated sensor values for all 9 axes
 #define OUTPUT__MODE_SENSORS_RAW 				3	// Outputs raw (uncalibrated) sensor values for all 9 axes
 #define OUTPUT__MODE_SENSORS_BOTH 			4 // Outputs calibrated AND raw sensor values for all 9 axes
+#define OUTPUT__MY_CUSTOM_MODE          5 // Outputs I defined
 // Output format definitions (do not change)
 #define OUTPUT__FORMAT_TEXT 						0 // Outputs data as text
 #define OUTPUT__FORMAT_BINARY 					1 // Outputs data as binary float
 #define OUTPUT__FORMAT_FACETRACK 				3 // Outputs data to facetrack
 
 // Dont change startup output mode and format for working of OpenTrack!
-int output_mode	 = OUTPUT__MODE_ANGLES;
-int output_format = OUTPUT__FORMAT_FACETRACK;
+int output_mode	 = OUTPUT__MY_CUSTOM_MODE;
+int output_format = OUTPUT__FORMAT_TEXT;
 //================================================================/
 // Bluetooth options
 /*****************************************************************/
@@ -444,6 +449,8 @@ void setup()
 void loop()
 {
   // Read incoming control messages
+
+          
   if (Serial.available())
   {
     if (readChar() == '#') 							// Start of new control message
@@ -522,6 +529,10 @@ void loop()
 					FixCenter();
 				else if (output_param == 'r')		// #or reset  YPR for FaceTrack mode
 					ResetCenterMatrix();
+        else if(output_param == 'm') 
+        {
+          int output_mode   = OUTPUT__MY_CUSTOM_MODE;
+        }
       }
       else if (command == '?')
       {
@@ -610,8 +621,20 @@ void loop()
 		G_Dt = (float) (timestamp - timestamp_old) * 1.0e-6; // Real time of loop run. We use this on the DCM algorithm (gyro integration time)
     // Update sensor readings
 		Sensor.Read(gyro,accel,magnetom);
+    if (output_mode == OUTPUT__MY_CUSTOM_MODE) 
+    {
+        //digitalWrite(STATUS_LED_PIN, HIGH);               //light when working
+        // Apply sensor calibration
+        compensate_sensor_errors();
+        // Run DCM algorithm
+        Matrix_update();
+        Normalize();
+        Compass_Heading();                                // Calculate magnetic heading
+        Drift_correction();
 
-    if (output_mode == OUTPUT__MODE_CALIBRATE_SENSORS)		// We're in calibration mode
+        my_output_angles();
+    }
+    else if (output_mode == OUTPUT__MODE_CALIBRATE_SENSORS)		// We're in calibration mode
     {
       check_reset_calibration_session();									// Check if this session needs a reset
       if (output_stream_on || output_single_on) output_calibration(curr_calibration_sensor);
@@ -626,9 +649,9 @@ void loop()
 				Normalize();
 				Compass_Heading();																// Calculate magnetic heading
 				Drift_correction();
-
+       
 				if (output_stream_on || output_single_on) output_angles();
-			//digitalWrite(STATUS_LED_PIN, LOW);								//dark when work done
+//			//digitalWrite(STATUS_LED_PIN, LOW);								//dark when work done
     }
     else 																									// Output sensor values
     {      

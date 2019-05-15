@@ -158,3 +158,28 @@ void output_float(float T)
 		Serial.write((byte*) &T, 4);		// binary
 	}
 }
+
+void my_output_angles()
+{
+    float OutMat[3][3];
+    float ypr[3];
+    char temp;
+    Matrix_Multiply33(DCM_Matrix, Calibr.D.orient_matrix, OutMat); //a*b=c
+    ypr[0] = TO_DEG(atan2(OutMat[1][0], OutMat[0][0])); //yaw
+    ypr[1] = TO_DEG(-asin(OutMat[2][0]));                 //pitch
+    ypr[2] = TO_DEG(atan2(OutMat[2][1], OutMat[2][2])); //roll
+//    if (output_format == OUTPUT__FORMAT_BINARY)
+//    {
+//      TXsinchro('A');
+//      Serial.write((byte*) ypr, 12);
+//    }
+//    else if (output_format == OUTPUT__FORMAT_TEXT)
+//    {
+//      Serial.print("#YPR=");
+      temp = (ypr[0]*255/360);
+      Serial.write(temp);
+//      Serial.print(temp,DEC); Serial.print((float)temp*360/255); Serial.print("\n");
+//      Serial.print(ypr[1]); Serial.print(",");
+//      Serial.print(ypr[2]); Serial.println();
+//    }
+}
